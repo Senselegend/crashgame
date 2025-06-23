@@ -4,13 +4,18 @@ import { GameCanvas } from '@/components/game-canvas';
 import { GameControls } from '@/components/game-controls';
 import { GameHistory } from '@/components/game-history';
 import { GameStats } from '@/components/game-stats';
+import { AchievementsModal } from '@/components/achievements-modal';
+import { CustomizationModal } from '@/components/customization-modal';
+import { ShareModal } from '@/components/share-modal';
 import { useGameState } from '@/hooks/use-game-state';
+import { useCustomization } from '@/hooks/use-customization';
 
 export default function CrashGame() {
   const {
     userData,
     gameHistory,
     gameState,
+    winStreak,
     startGame,
     cashOut,
     claimDailyBonus,
@@ -20,7 +25,15 @@ export default function CrashGame() {
     isLuckyHour,
   } = useGameState();
 
+  const { getCurrentSkin, getCurrentTheme } = useCustomization();
   const [rocketStyle, setRocketStyle] = useState({ left: '60px', bottom: '60px' });
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [showCustomization, setShowCustomization] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const [shareData, setShareData] = useState<any>(null);
+
+  const currentSkin = getCurrentSkin();
+  const currentTheme = getCurrentTheme();
 
   // Update spaceship position to follow the curve smoothly
   useEffect(() => {
@@ -53,6 +66,17 @@ export default function CrashGame() {
     }
   }, [gameState.isPlaying, gameState.startTime]);
 
+  // Listen for big win events
+  useEffect(() => {
+    const handleBigWin = (event: any) => {
+      setShareData(event.detail);
+      setShowShare(true);
+    };
+
+    window.addEventListener('bigWin', handleBigWin);
+    return () => window.removeEventListener('bigWin', handleBigWin);
+  }, []);
+
   const getGameStatus = () => {
     if (gameState.isPlaying) {
       return { text: 'Flying...', className: 'text-game-cyan' };
@@ -63,7 +87,13 @@ export default function CrashGame() {
   const status = getGameStatus();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-game-dark via-game-darker to-game-dark">
+    <div 
+      className="min-h-screen bg-gradient-to-b from-game-dark via-game-darker to-game-dark"
+      style={{
+        '--theme-primary': currentTheme.colors.primary,
+        '--theme-secondary': currentTheme.colors.secondary,
+      } as React.CSSProperties}
+    >
       {/* Header */}
       <header className="bg-game-darker/80 backdrop-blur-sm border-b border-game-purple/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -71,7 +101,7 @@ export default function CrashGame() {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-game-purple to-game-blue rounded-full flex items-center justify-center">
-                  <i className="fas fa-rocket text-white text-lg"></i>
+                  <span className="text-lg">{currentSkin.emoji}</span>
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-white">CrashGame</h1>
@@ -86,10 +116,39 @@ export default function CrashGame() {
                     <span className="text-sm font-mono">Level {userData.level}</span>
                   </div>
                 </div>
+                
+                {winStreak > 0 && (
+                  <div className="bg-game-green/10 border border-game-green/30 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-fire text-game-green text-sm"></i>
+                      <span className="text-sm font-mono">{winStreak} streak</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => setShowAchievements(true)}
+                variant="outline"
+                size="sm"
+                className="border-game-purple/30 hover:bg-game-purple/20"
+              >
+                <i className="fas fa-trophy mr-2"></i>
+                <span className="hidden sm:inline">Achievements</span>
+              </Button>
+              
+              <Button
+                onClick={() => setShowCustomization(true)}
+                variant="outline"
+                size="sm"
+                className="border-game-purple/30 hover:bg-game-purple/20"
+              >
+                <i className="fas fa-palette mr-2"></i>
+                <span className="hidden sm:inline">Customize</span>
+              </Button>
+
               <div className="bg-gradient-to-r from-game-purple/20 to-game-blue/20 border border-game-purple/30 rounded-lg px-4 py-2">
                 <div className="flex items-center gap-2">
                   <i className="fas fa-coins text-game-cyan text-lg"></i>
@@ -162,7 +221,7 @@ export default function CrashGame() {
                     style={rocketStyle}
                   >
                     <div className={`text-3xl ${gameState.isPlaying ? 'animate-rocket-fly' : ''} filter drop-shadow-lg transform -translate-x-1/2 -translate-y-1/2`}>
-                      🛸
+                      {currentSkin.emoji}
                     </div>
                   </div>
 
@@ -193,6 +252,28 @@ export default function CrashGame() {
           </div>
         </div>
       </main>
+
+      {/* Modals */}
+      <AchievementsModal 
+        isOpen={showAchievements}
+        onClose={() => setShowAchievements(false)}
+      />
+      
+      <CustomizationModal 
+        isOpen={showCustomization}
+        onClose={() => setShowCustomization(false)}
+        userData={userData}
+      />
+      
+      {shareData && (
+        <ShareModal 
+          isOpen={showShare}
+          onClose={() => setShowShare(false)}
+          winAmount={shareData.winAmount}
+          multiplier={shareData.multiplier}
+          betAmount={shareData.betAmount}
+        />
+      )}
     </div>
   );
 }

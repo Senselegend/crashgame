@@ -4,6 +4,8 @@ import { useLocalStorage } from './use-local-storage';
 import { GameLogic } from '@/lib/game-logic';
 import { CryptoRNG } from '@/lib/crypto-rng';
 import { useToast } from '@/hooks/use-toast';
+import { useAchievements } from './use-achievements';
+import { useCustomization } from './use-customization';
 
 const initialUserData: UserData = {
   balance: 10000,
@@ -35,8 +37,11 @@ export function useGameState() {
   const [userData, setUserData] = useLocalStorage<UserData>('crashgame-user', initialUserData);
   const [gameHistory, setGameHistory] = useLocalStorage<GameResult[]>('crashgame-history', []);
   const [gameState, setGameState] = useState<GameState>(initialGameState);
+  const [winStreak, setWinStreak] = useLocalStorage<number>('win-streak', 0);
   
   const { toast } = useToast();
+  const { checkAchievement } = useAchievements();
+  const { unlockSkin, unlockTheme } = useCustomization();
   const gameLoopRef = useRef<number>();
   const startTimeRef = useRef<number>();
   const crashPointRef = useRef<number>();
@@ -140,12 +145,38 @@ export function useGameState() {
     // Update game history
     setGameHistory(prev => [result, ...prev.slice(0, 19)]);
 
+    // Update win streak
+    if (isWin) {
+      setWinStreak(prev => prev + 1);
+    } else {
+      setWinStreak(0);
+    }
+
+    // Check achievements
+    const newStreak = isWin ? winStreak + 1 : 0;
+    checkAchievement('first_win', userData.stats.totalWins + (isWin ? 1 : 0));
+    checkAchievement('big_win', isWin ? winAmount : 0);
+    checkAchievement('high_roller', gameState.betAmount);
+    checkAchievement('multiplier_master', finalMultiplier);
+    checkAchievement('lucky_streak', newStreak);
+    checkAchievement('level_10', GameLogic.calculateLevel(userData.totalWagered + gameState.betAmount));
+    checkAchievement('crash_survivor', userData.stats.totalLosses + (!isWin ? 1 : 0));
+
     // Show result notification
     if (isWin) {
       showNotification(
         `${isAuto ? 'Auto ' : ''}Cash out! Won ${winAmount} credits at ×${finalMultiplier.toFixed(2)}`,
         'success'
       );
+      
+      // Show share option for big wins
+      if (winAmount >= 10000) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('bigWin', { 
+            detail: { winAmount, multiplier: finalMultiplier, betAmount: gameState.betAmount }
+          }));
+        }, 2000);
+      }
     } else {
       showNotification(
         `Crashed at ×${finalMultiplier.toFixed(2)}! Lost ${gameState.betAmount} credits`,
@@ -264,6 +295,7 @@ export function useGameState() {
     userData,
     gameHistory,
     gameState,
+    winStreak,
     startGame,
     cashOut,
     claimDailyBonus,
