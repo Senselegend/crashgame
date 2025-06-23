@@ -62,9 +62,16 @@
     @apply border-border;
   }
 
+  html {
+    background-color: hsl(240, 10%, 3.9%);
+  }
+
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    background-color: hsl(240, 10%, 3.9%);
+    color: hsl(0, 0%, 98%);
+    min-height: 100vh;
   }
 }
 
