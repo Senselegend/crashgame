@@ -66,73 +66,184 @@ export function GameCanvas({ gameState, className }: GameCanvasProps) {
         ctx.stroke();
       }
 
-      // Draw multiplier curve if game is playing
+      // Draw multiplier curve
       if (gameState.isPlaying && gameState.startTime) {
         const elapsed = Date.now() - gameState.startTime;
-        const progress = Math.min(elapsed / 10000, 1); // 10 seconds max flight time
+        const progress = Math.min(elapsed / 8000, 1); // 8 seconds max for smooth animation
         
-        // Calculate position based on exponential curve
-        const currentX = 50 + progress * (rect.width - 100);
-        const multiplierNormalized = Math.log(gameState.currentMultiplier) / Math.log(50); // Normalize to 0-1
-        const currentY = rect.height - 50 - (multiplierNormalized * (rect.height - 100));
+        // Draw exponential curve from bottom-left to current position
+        const startX = 60;
+        const startY = rect.height - 60;
+        const endX = startX + progress * (rect.width - 140);
         
-        // Add current point to path
-        pathPointsRef.current.push({ x: currentX, y: currentY });
+        // Calculate curve points using exponential formula
+        const points: { x: number; y: number }[] = [];
+        const steps = Math.floor(progress * 100);
         
-        // Keep only recent points to prevent memory issues
-        if (pathPointsRef.current.length > 150) {
-          pathPointsRef.current = pathPointsRef.current.slice(-150);
+        for (let i = 0; i <= steps; i++) {
+          const t = i / 100;
+          const x = startX + t * (rect.width - 140);
+          
+          // Exponential growth curve
+          const multiplierAtTime = Math.pow(Math.E, 0.0001 * (t * 8000)) * (1 - 0.03);
+          const normalizedMultiplier = Math.log(Math.max(1, multiplierAtTime)) / Math.log(10);
+          const y = startY - (normalizedMultiplier * (rect.height - 120));
+          
+          points.push({ x, y: Math.max(40, y) });
         }
 
-        // Draw the curve with smooth bezier curves
-        if (pathPointsRef.current.length > 2) {
-          ctx.strokeStyle = '#00D9FF';
-          ctx.lineWidth = 4;
+        // Store points for fade out animation
+        pathPointsRef.current = points;
+
+        // Draw the exponential curve
+        if (points.length > 1) {
+          // Draw gradient background under curve
+          const gradient = ctx.createLinearGradient(0, startY, 0, 40);
+          gradient.addColorStop(0, 'rgba(0, 217, 255, 0.1)');
+          gradient.addColorStop(1, 'rgba(0, 217, 255, 0.3)');
+          
+          ctx.fillStyle = gradient;
           ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          points.forEach((point, index) => {
+            if (index === 0) {
+              ctx.lineTo(point.x, point.y);
+            } else {
+              const prev = points[index - 1];
+              const controlX = (prev.x + point.x) / 2;
+              const controlY = (prev.y + point.y) / 2;
+              ctx.quadraticCurveTo(prev.x, prev.y, controlX, controlY);
+            }
+          });
+          ctx.lineTo(endX, startY);
+          ctx.closePath();
+          ctx.fill();
           
-          // Start from first point
-          ctx.moveTo(pathPointsRef.current[0].x, pathPointsRef.current[0].y);
+          // Draw the main curve line
+          ctx.strokeStyle = '#00D9FF';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
           
-          // Draw smooth curve through all points
-          for (let i = 1; i < pathPointsRef.current.length - 1; i++) {
-            const current = pathPointsRef.current[i];
-            const next = pathPointsRef.current[i + 1];
-            const controlX = (current.x + next.x) / 2;
-            const controlY = (current.y + next.y) / 2;
-            ctx.quadraticCurveTo(current.x, current.y, controlX, controlY);
-          }
-          
-          // Draw to the last point
-          if (pathPointsRef.current.length > 1) {
-            const last = pathPointsRef.current[pathPointsRef.current.length - 1];
-            ctx.lineTo(last.x, last.y);
-          }
+          points.forEach((point, index) => {
+            if (index === 0) {
+              ctx.lineTo(point.x, point.y);
+            } else {
+              const prev = points[index - 1];
+              const controlX = (prev.x + point.x) / 2;
+              const controlY = (prev.y + point.y) / 2;
+              ctx.quadraticCurveTo(prev.x, prev.y, controlX, controlY);
+            }
+          });
           
           ctx.stroke();
           
           // Add glow effect
           ctx.shadowColor = '#00D9FF';
-          ctx.shadowBlur = 15;
+          ctx.shadowBlur = 12;
           ctx.stroke();
           ctx.shadowBlur = 0;
         }
 
-        // Draw current multiplier point (larger and more visible)
+        // Calculate spaceship position on the curve
+        if (points.length > 0) {
+          const currentPoint = points[points.length - 1];
+          
+          // Draw current multiplier point
+          ctx.fillStyle = '#00D9FF';
+          ctx.beginPath();
+          ctx.arc(currentPoint.x, currentPoint.y, 6, 0, 2 * Math.PI);
+          ctx.fill();
+          
+          // Add pulsing glow
+          ctx.shadowColor = '#00D9FF';
+          ctx.shadowBlur = 15;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          
+          // Store position for spaceship
+          window.rocketPosition = { x: currentPoint.x, y: currentPoint.y };
+        }
+      }
+
+      // Handle fade out animation when game ends
+      if (!gameState.isPlaying && pathPointsRef.current.length > 0) {
+        const fadeStartTime = window.fadeStartTime || Date.now();
+        if (!window.fadeStartTime) window.fadeStartTime = fadeStartTime;
+        
+        const fadeElapsed = Date.now() - fadeStartTime;
+        const fadeDuration = 1500; // 1.5 seconds fade
+        const fadeProgress = Math.min(fadeElapsed / fadeDuration, 1);
+        const opacity = 1 - fadeProgress;
+        
+        if (opacity > 0) {
+          const points = pathPointsRef.current;
+          const startX = 60;
+          const startY = rect.height - 60;
+          const endX = points[points.length - 1]?.x || startX;
+          
+          // Draw fading gradient background
+          const gradient = ctx.createLinearGradient(0, startY, 0, 40);
+          gradient.addColorStop(0, `rgba(0, 217, 255, ${0.1 * opacity})`);
+          gradient.addColorStop(1, `rgba(0, 217, 255, ${0.3 * opacity})`);
+          
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          points.forEach((point, index) => {
+            if (index === 0) {
+              ctx.lineTo(point.x, point.y);
+            } else {
+              const prev = points[index - 1];
+              const controlX = (prev.x + point.x) / 2;
+              const controlY = (prev.y + point.y) / 2;
+              ctx.quadraticCurveTo(prev.x, prev.y, controlX, controlY);
+            }
+          });
+          ctx.lineTo(endX, startY);
+          ctx.closePath();
+          ctx.fill();
+          
+          // Draw fading curve line
+          ctx.strokeStyle = `rgba(0, 217, 255, ${opacity})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          
+          points.forEach((point, index) => {
+            if (index === 0) {
+              ctx.lineTo(point.x, point.y);
+            } else {
+              const prev = points[index - 1];
+              const controlX = (prev.x + point.x) / 2;
+              const controlY = (prev.y + point.y) / 2;
+              ctx.quadraticCurveTo(prev.x, prev.y, controlX, controlY);
+            }
+          });
+          
+          ctx.stroke();
+          
+          // Continue fade animation
+          animationRef.current = requestAnimationFrame(draw);
+        } else {
+          // Fade complete, clear everything
+          pathPointsRef.current = [];
+          window.fadeStartTime = undefined;
+        }
+      }
+
+      // Draw static starting point when not playing and fade is complete
+      if (!gameState.isPlaying && pathPointsRef.current.length === 0) {
+        const startX = 60;
+        const startY = rect.height - 60;
+        
         ctx.fillStyle = '#00D9FF';
         ctx.beginPath();
-        ctx.arc(currentX, currentY, 8, 0, 2 * Math.PI);
+        ctx.arc(startX, startY, 4, 0, 2 * Math.PI);
         ctx.fill();
         
-        // Add pulsing glow to the point
-        ctx.shadowColor = '#00D9FF';
-        ctx.shadowBlur = 20;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        
-        // Store current position for rocket
-        if (gameState.isPlaying) {
-          window.rocketPosition = { x: currentX, y: currentY };
-        }
+        // Store starting position
+        window.rocketPosition = { x: startX, y: startY };
       }
 
       if (gameState.isPlaying) {
@@ -140,15 +251,14 @@ export function GameCanvas({ gameState, className }: GameCanvasProps) {
       }
     };
 
-    if (gameState.isPlaying) {
-      // Reset path when starting new game
-      if (pathPointsRef.current.length === 0) {
-        pathPointsRef.current = [];
-      }
+    // Start animation when game is playing OR when fading out
+    if (gameState.isPlaying || (!gameState.isPlaying && pathPointsRef.current.length > 0)) {
       draw();
-    } else {
-      // Clear path when game ends
-      pathPointsRef.current = [];
+    } else if (!gameState.isPlaying) {
+      // Reset fade when starting fresh
+      window.fadeStartTime = undefined;
+      // Draw one frame to show starting point
+      draw();
     }
 
     return () => {

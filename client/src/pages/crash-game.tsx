@@ -22,11 +22,10 @@ export default function CrashGame() {
 
   const [rocketStyle, setRocketStyle] = useState({ left: '10%', bottom: '10%' });
 
-  // Update rocket position during game to follow the curve
+  // Update spaceship position to follow the curve smoothly
   useEffect(() => {
     if (gameState.isPlaying && gameState.startTime) {
-      const updateRocket = () => {
-        // Get position from canvas calculation
+      const updateSpaceship = () => {
         const position = (window as any).rocketPosition;
         if (position) {
           const canvas = document.querySelector('canvas');
@@ -40,13 +39,17 @@ export default function CrashGame() {
         }
       };
 
-      const interval = setInterval(updateRocket, 50);
+      const interval = setInterval(updateSpaceship, 30); // Smoother animation
       return () => clearInterval(interval);
     } else {
-      // Reset rocket position when game is not playing
-      setTimeout(() => {
-        setRocketStyle({ left: '8%', bottom: '15%' });
-      }, gameState.isPlaying ? 0 : 1000);
+      // Smoothly return to starting position after game ends
+      const returnToStart = () => {
+        setRocketStyle({ left: '12%', bottom: '15%' });
+      };
+      
+      // Delay the return animation slightly for better visual flow
+      const timeout = setTimeout(returnToStart, gameState.isPlaying ? 0 : 800);
+      return () => clearTimeout(timeout);
     }
   }, [gameState.isPlaying, gameState.startTime]);
 
@@ -155,10 +158,10 @@ export default function CrashGame() {
 
                   {/* Spaceship Element */}
                   <div 
-                    className="absolute transition-all duration-75 ease-linear z-10"
+                    className="absolute transition-all duration-100 ease-out z-10"
                     style={rocketStyle}
                   >
-                    <div className={`text-3xl ${gameState.isPlaying ? 'animate-rocket-fly' : ''} filter drop-shadow-lg`}>
+                    <div className={`text-3xl ${gameState.isPlaying ? 'animate-rocket-fly' : ''} filter drop-shadow-lg transform -translate-x-1/2 -translate-y-1/2`}>
                       🛸
                     </div>
                   </div>

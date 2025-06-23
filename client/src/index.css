@@ -158,8 +158,9 @@
 }
 
 @keyframes rocket-fly {
-  0% { transform: translateY(0px) rotate(0deg) }
-  100% { transform: translateY(-2px) rotate(-2deg) }
+  0% { transform: translateY(0px) rotate(0deg) scale(1) }
+  50% { transform: translateY(-1px) rotate(-1deg) scale(1.05) }
+  100% { transform: translateY(0px) rotate(0deg) scale(1) }
 }
 
 @keyframes crash-shake {
@@ -179,7 +180,7 @@
 }
 
 .animate-rocket-fly {
-  animation: rocket-fly 0.1s linear infinite;
+  animation: rocket-fly 1.5s ease-in-out infinite;
 }
 
 .animate-crash-shake {
