@@ -76,20 +76,24 @@ export function GameCanvas({ gameState, className }: GameCanvasProps) {
         const startY = rect.height - 60;
         const endX = startX + progress * (rect.width - 140);
         
-        // Calculate curve points using exponential formula
+        // Calculate curve points using exponential formula with smoother interpolation
         const points: { x: number; y: number }[] = [];
-        const steps = Math.floor(progress * 100);
+        const steps = Math.max(50, Math.floor(progress * 150)); // More points for smoother curve
         
         for (let i = 0; i <= steps; i++) {
-          const t = i / 100;
-          const x = startX + t * (rect.width - 140);
+          const t = i / steps;
+          const x = startX + t * progress * (rect.width - 140);
           
-          // Exponential growth curve
-          const multiplierAtTime = Math.pow(Math.E, 0.0001 * (t * 8000)) * (1 - 0.03);
-          const normalizedMultiplier = Math.log(Math.max(1, multiplierAtTime)) / Math.log(10);
+          // Use actual game multiplier calculation for accuracy
+          const timeMs = t * progress * 8000;
+          const multiplierAtTime = Math.pow(Math.E, 0.0001 * timeMs) * (1 - 0.03);
+          const clampedMultiplier = Math.max(1.0, Math.min(50, multiplierAtTime));
+          
+          // Smoother Y calculation using logarithmic scale
+          const normalizedMultiplier = Math.log(clampedMultiplier) / Math.log(10);
           const y = startY - (normalizedMultiplier * (rect.height - 120));
           
-          points.push({ x, y: Math.max(40, y) });
+          points.push({ x, y: Math.max(40, Math.min(rect.height - 60, y)) });
         }
 
         // Store points for fade out animation
@@ -161,8 +165,11 @@ export function GameCanvas({ gameState, className }: GameCanvasProps) {
           ctx.fill();
           ctx.shadowBlur = 0;
           
-          // Store position for spaceship
+          // Store position for spaceship (ensure it matches exactly)
           window.rocketPosition = { x: currentPoint.x, y: currentPoint.y };
+        } else {
+          // If no points yet, start at the beginning
+          window.rocketPosition = { x: startX, y: startY };
         }
       }
 
@@ -242,7 +249,7 @@ export function GameCanvas({ gameState, className }: GameCanvasProps) {
         ctx.arc(startX, startY, 4, 0, 2 * Math.PI);
         ctx.fill();
         
-        // Store starting position
+        // Store starting position for UFO
         window.rocketPosition = { x: startX, y: startY };
       }
 

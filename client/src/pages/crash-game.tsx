@@ -20,7 +20,7 @@ export default function CrashGame() {
     isLuckyHour,
   } = useGameState();
 
-  const [rocketStyle, setRocketStyle] = useState({ left: '10%', bottom: '10%' });
+  const [rocketStyle, setRocketStyle] = useState({ left: '60px', bottom: '60px' });
 
   // Update spaceship position to follow the curve smoothly
   useEffect(() => {
@@ -32,23 +32,23 @@ export default function CrashGame() {
           if (canvas) {
             const rect = canvas.getBoundingClientRect();
             setRocketStyle({
-              left: `${(position.x / rect.width) * 100}%`,
-              bottom: `${((rect.height - position.y) / rect.height) * 100}%`,
+              left: `${position.x}px`,
+              bottom: `${rect.height - position.y}px`,
             });
           }
         }
       };
 
-      const interval = setInterval(updateSpaceship, 30); // Smoother animation
+      const interval = setInterval(updateSpaceship, 16); // 60fps for smoothest animation
       return () => clearInterval(interval);
     } else {
       // Smoothly return to starting position after game ends
       const returnToStart = () => {
-        setRocketStyle({ left: '12%', bottom: '15%' });
+        setRocketStyle({ left: '60px', bottom: '60px' });
       };
       
       // Delay the return animation slightly for better visual flow
-      const timeout = setTimeout(returnToStart, gameState.isPlaying ? 0 : 800);
+      const timeout = setTimeout(returnToStart, gameState.isPlaying ? 0 : 600);
       return () => clearTimeout(timeout);
     }
   }, [gameState.isPlaying, gameState.startTime]);
@@ -158,7 +158,7 @@ export default function CrashGame() {
 
                   {/* Spaceship Element */}
                   <div 
-                    className="absolute transition-all duration-100 ease-out z-10"
+                    className="absolute transition-all duration-75 ease-linear z-10"
                     style={rocketStyle}
                   >
                     <div className={`text-3xl ${gameState.isPlaying ? 'animate-rocket-fly' : ''} filter drop-shadow-lg transform -translate-x-1/2 -translate-y-1/2`}>
