@@ -69,53 +69,70 @@ export function GameCanvas({ gameState, className }: GameCanvasProps) {
       // Draw multiplier curve if game is playing
       if (gameState.isPlaying && gameState.startTime) {
         const elapsed = Date.now() - gameState.startTime;
+        const progress = Math.min(elapsed / 10000, 1); // 10 seconds max flight time
         
-        // Calculate current point
-        const currentX = Math.min((elapsed / 15000) * rect.width, rect.width - 50);
-        const currentY = Math.max(rect.height - (gameState.currentMultiplier - 1) * 30, 50);
+        // Calculate position based on exponential curve
+        const currentX = 50 + progress * (rect.width - 100);
+        const multiplierNormalized = Math.log(gameState.currentMultiplier) / Math.log(50); // Normalize to 0-1
+        const currentY = rect.height - 50 - (multiplierNormalized * (rect.height - 100));
         
         // Add current point to path
         pathPointsRef.current.push({ x: currentX, y: currentY });
         
         // Keep only recent points to prevent memory issues
-        if (pathPointsRef.current.length > 200) {
-          pathPointsRef.current = pathPointsRef.current.slice(-200);
+        if (pathPointsRef.current.length > 150) {
+          pathPointsRef.current = pathPointsRef.current.slice(-150);
         }
 
-        // Draw the curve
-        if (pathPointsRef.current.length > 1) {
+        // Draw the curve with smooth bezier curves
+        if (pathPointsRef.current.length > 2) {
           ctx.strokeStyle = '#00D9FF';
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 4;
           ctx.beginPath();
           
-          pathPointsRef.current.forEach((point, index) => {
-            if (index === 0) {
-              ctx.moveTo(point.x, point.y);
-            } else {
-              ctx.lineTo(point.x, point.y);
-            }
-          });
+          // Start from first point
+          ctx.moveTo(pathPointsRef.current[0].x, pathPointsRef.current[0].y);
+          
+          // Draw smooth curve through all points
+          for (let i = 1; i < pathPointsRef.current.length - 1; i++) {
+            const current = pathPointsRef.current[i];
+            const next = pathPointsRef.current[i + 1];
+            const controlX = (current.x + next.x) / 2;
+            const controlY = (current.y + next.y) / 2;
+            ctx.quadraticCurveTo(current.x, current.y, controlX, controlY);
+          }
+          
+          // Draw to the last point
+          if (pathPointsRef.current.length > 1) {
+            const last = pathPointsRef.current[pathPointsRef.current.length - 1];
+            ctx.lineTo(last.x, last.y);
+          }
           
           ctx.stroke();
           
           // Add glow effect
           ctx.shadowColor = '#00D9FF';
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 15;
           ctx.stroke();
           ctx.shadowBlur = 0;
         }
 
-        // Draw current multiplier point
+        // Draw current multiplier point (larger and more visible)
         ctx.fillStyle = '#00D9FF';
         ctx.beginPath();
-        ctx.arc(currentX, currentY, 6, 0, 2 * Math.PI);
+        ctx.arc(currentX, currentY, 8, 0, 2 * Math.PI);
         ctx.fill();
         
-        // Add glow to the point
+        // Add pulsing glow to the point
         ctx.shadowColor = '#00D9FF';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 20;
         ctx.fill();
         ctx.shadowBlur = 0;
+        
+        // Store current position for rocket
+        if (gameState.isPlaying) {
+          window.rocketPosition = { x: currentX, y: currentY };
+        }
       }
 
       if (gameState.isPlaying) {

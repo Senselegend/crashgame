@@ -22,25 +22,31 @@ export default function CrashGame() {
 
   const [rocketStyle, setRocketStyle] = useState({ left: '10%', bottom: '10%' });
 
-  // Update rocket position during game
+  // Update rocket position during game to follow the curve
   useEffect(() => {
     if (gameState.isPlaying && gameState.startTime) {
       const updateRocket = () => {
-        const elapsed = Date.now() - gameState.startTime!;
-        const progress = Math.min(elapsed / 15000, 1);
-        setRocketStyle({
-          left: `${10 + progress * 70}%`,
-          bottom: `${10 + progress * 60}%`,
-        });
+        // Get position from canvas calculation
+        const position = (window as any).rocketPosition;
+        if (position) {
+          const canvas = document.querySelector('canvas');
+          if (canvas) {
+            const rect = canvas.getBoundingClientRect();
+            setRocketStyle({
+              left: `${(position.x / rect.width) * 100}%`,
+              bottom: `${((rect.height - position.y) / rect.height) * 100}%`,
+            });
+          }
+        }
       };
 
-      const interval = setInterval(updateRocket, 100);
+      const interval = setInterval(updateRocket, 50);
       return () => clearInterval(interval);
     } else {
       // Reset rocket position when game is not playing
       setTimeout(() => {
-        setRocketStyle({ left: '10%', bottom: '10%' });
-      }, gameState.isPlaying ? 0 : 2000);
+        setRocketStyle({ left: '8%', bottom: '15%' });
+      }, gameState.isPlaying ? 0 : 1000);
     }
   }, [gameState.isPlaying, gameState.startTime]);
 
@@ -147,13 +153,13 @@ export default function CrashGame() {
                     </div>
                   </div>
 
-                  {/* Rocket Element */}
+                  {/* Spaceship Element */}
                   <div 
-                    className="absolute transition-all duration-100 ease-linear"
+                    className="absolute transition-all duration-75 ease-linear z-10"
                     style={rocketStyle}
                   >
-                    <div className={`text-4xl ${gameState.isPlaying ? 'animate-rocket-fly' : ''}`}>
-                      🚀
+                    <div className={`text-3xl ${gameState.isPlaying ? 'animate-rocket-fly' : ''} filter drop-shadow-lg`}>
+                      🛸
                     </div>
                   </div>
 

@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { pgTable, serial, text, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 
 // Game state schemas
 export const gameResultSchema = z.object({
@@ -45,3 +47,42 @@ export type GameResult = z.infer<typeof gameResultSchema>;
 export type UserStats = z.infer<typeof userStatsSchema>;
 export type UserData = z.infer<typeof userDataSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
+
+// Database Tables
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  balance: integer("balance").notNull().default(10000),
+  level: integer("level").notNull().default(1),
+  totalWagered: integer("total_wagered").notNull().default(0),
+  lastDailyBonus: timestamp("last_daily_bonus"),
+  consecutiveLosses: integer("consecutive_losses").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const gameResults = pgTable("game_results", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  multiplier: real("multiplier").notNull(),
+  isWin: boolean("is_win").notNull(),
+  betAmount: integer("bet_amount").notNull(),
+  winAmount: integer("win_amount"),
+  isAuto: boolean("is_auto").default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Zod schemas for API validation
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGameResultSchema = createInsertSchema(gameResults).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types for database operations
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertGameResult = z.infer<typeof insertGameResultSchema>;

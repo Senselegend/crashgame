@@ -120,6 +120,10 @@ The application is configured for PostgreSQL with Drizzle ORM:
 ```
 Changelog:
 - June 23, 2025. Initial setup
+- June 23, 2025. Fixed graph curve to properly follow rocket movement
+- June 23, 2025. Changed rocket icon to UFO (🛸) 
+- June 23, 2025. Added PostgreSQL database with user and game history tables
+- June 23, 2025. Implemented hybrid storage (database with memory fallback)
 ```
 
 ## User Preferences
