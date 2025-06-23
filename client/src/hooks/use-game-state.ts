@@ -74,61 +74,6 @@ export function useGameState() {
     });
   }, [toast]);
 
-  const startGame = useCallback(() => {
-    if (gameState.isPlaying) return;
-
-    if (!GameLogic.isValidBet(gameState.betAmount, userData.balance)) {
-      showNotification('Invalid bet amount!', 'error');
-      return;
-    }
-
-    const crashPoint = CryptoRNG.generateCrashPoint();
-    crashPointRef.current = crashPoint;
-    startTimeRef.current = Date.now();
-
-    setGameState(prev => ({
-      ...prev,
-      isPlaying: true,
-      currentMultiplier: 1.0,
-      crashPoint,
-      startTime: startTimeRef.current,
-      canCashOut: false,
-    }));
-
-    // Start game loop
-    const gameLoop = () => {
-      const elapsed = Date.now() - startTimeRef.current!;
-      const multiplier = GameLogic.calculateMultiplier(elapsed);
-      
-      setGameState(prev => ({
-        ...prev,
-        currentMultiplier: multiplier,
-        canCashOut: multiplier >= 1.01,
-      }));
-
-      // Check for crash
-      if (multiplier >= crashPointRef.current!) {
-        endGame(false, multiplier);
-        return;
-      }
-
-      // Check for auto-stop
-      if (multiplier >= gameState.autoStopMultiplier) {
-        endGame(true, multiplier, true);
-        return;
-      }
-
-      gameLoopRef.current = requestAnimationFrame(gameLoop);
-    };
-
-    gameLoopRef.current = requestAnimationFrame(gameLoop);
-  }, [gameState, userData.balance, showNotification]);
-
-  const cashOut = useCallback(() => {
-    if (!gameState.isPlaying || !gameState.canCashOut) return;
-    endGame(true, gameState.currentMultiplier, false);
-  }, [gameState]);
-
   const endGame = useCallback((isWin: boolean, finalMultiplier: number, isAuto = false) => {
     if (gameLoopRef.current) {
       cancelAnimationFrame(gameLoopRef.current);
@@ -218,6 +163,62 @@ export function useGameState() {
       startTime: undefined,
     }));
   }, [gameState, setUserData, setGameHistory, updateUserStats, showNotification]);
+
+  const startGame = useCallback(() => {
+    if (gameState.isPlaying) return;
+
+    if (!GameLogic.isValidBet(gameState.betAmount, userData.balance)) {
+      showNotification('Invalid bet amount!', 'error');
+      return;
+    }
+
+    const crashPoint = CryptoRNG.generateCrashPoint();
+    const autoStopMultiplier = gameState.autoStopMultiplier;
+    crashPointRef.current = crashPoint;
+    startTimeRef.current = Date.now();
+
+    setGameState(prev => ({
+      ...prev,
+      isPlaying: true,
+      currentMultiplier: 1.0,
+      crashPoint,
+      startTime: startTimeRef.current,
+      canCashOut: false,
+    }));
+
+    // Start game loop
+    const gameLoop = () => {
+      const elapsed = Date.now() - startTimeRef.current!;
+      const multiplier = GameLogic.calculateMultiplier(elapsed);
+      
+      setGameState(prev => ({
+        ...prev,
+        currentMultiplier: multiplier,
+        canCashOut: multiplier >= 1.01,
+      }));
+
+      // Check for crash
+      if (multiplier >= crashPointRef.current!) {
+        endGame(false, multiplier);
+        return;
+      }
+
+      // Check for auto-stop
+      if (multiplier >= autoStopMultiplier) {
+        endGame(true, multiplier, true);
+        return;
+      }
+
+      gameLoopRef.current = requestAnimationFrame(gameLoop);
+    };
+
+    gameLoopRef.current = requestAnimationFrame(gameLoop);
+  }, [gameState, userData.balance, showNotification, endGame]);
+
+  const cashOut = useCallback(() => {
+    if (!gameState.isPlaying || !gameState.canCashOut) return;
+    endGame(true, gameState.currentMultiplier, false);
+  }, [gameState, endGame]);
 
   const claimDailyBonus = useCallback(() => {
     if (!GameLogic.canClaimDailyBonus(userData.lastDailyBonus)) {
