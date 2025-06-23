@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Game specific colors */
+  --game-dark: hsl(240, 10%, 3.9%);
+  --game-darker: hsl(240, 20%, 8%);
+  --game-purple: hsl(262, 83%, 70%);
+  --game-blue: hsl(207, 90%, 54%);
+  --game-cyan: hsl(186, 100%, 50%);
+  --game-red: hsl(0, 84%, 60%);
+  --game-green: hsl(142, 76%, 36%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .font-game {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .bg-game-dark {
+    background-color: var(--game-dark);
+  }
+  
+  .bg-game-darker {
+    background-color: var(--game-darker);
+  }
+  
+  .text-game-purple {
+    color: var(--game-purple);
+  }
+  
+  .text-game-blue {
+    color: var(--game-blue);
+  }
+  
+  .text-game-cyan {
+    color: var(--game-cyan);
+  }
+  
+  .text-game-red {
+    color: var(--game-red);
+  }
+  
+  .text-game-green {
+    color: var(--game-green);
+  }
+  
+  .border-game-purple {
+    border-color: var(--game-purple);
+  }
+  
+  .from-game-purple {
+    --tw-gradient-from: var(--game-purple);
+  }
+  
+  .to-game-blue {
+    --tw-gradient-to: var(--game-blue);
+  }
+  
+  .from-game-blue {
+    --tw-gradient-from: var(--game-blue);
+  }
+  
+  .to-game-purple {
+    --tw-gradient-to: var(--game-purple);
+  }
+  
+  .from-game-green {
+    --tw-gradient-from: var(--game-green);
+  }
+  
+  .shadow-game-purple {
+    --tw-shadow-color: var(--game-purple);
+  }
+  
+  .shadow-game-green {
+    --tw-shadow-color: var(--game-green);
+  }
+}
+
+/* Custom animations */
+@keyframes pulse-neon {
+  0%, 100% { 
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  50% { 
+    opacity: 0.8;
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.8);
+  }
+}
+
+@keyframes rocket-fly {
+  0% { transform: translateY(0px) rotate(0deg) }
+  100% { transform: translateY(-2px) rotate(-2deg) }
+}
+
+@keyframes crash-shake {
+  0%, 100% { transform: translateX(0) }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px) }
+  20%, 40%, 60%, 80% { transform: translateX(2px) }
+}
+
+@keyframes win-bounce {
+  0% { transform: scale(1) }
+  50% { transform: scale(1.05) }
+  100% { transform: scale(1) }
+}
+
+.animate-pulse-neon {
+  animation: pulse-neon 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-rocket-fly {
+  animation: rocket-fly 0.1s linear infinite;
+}
+
+.animate-crash-shake {
+  animation: crash-shake 0.5s ease-in-out;
+}
+
+.animate-win-bounce {
+  animation: win-bounce 0.6s ease-out;
+}
